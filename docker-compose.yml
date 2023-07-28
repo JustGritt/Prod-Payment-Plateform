@@ -1,0 +1,57 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:11.1-alpine
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./payment/pgdata:/var/lib/postgresql/data
+  payment-server:
+    build:
+      context: ./payment/api
+      dockerfile: Dockerfile
+    ports:
+      - "${BACK_PORT}:${BACK_PORT}" 
+    container_name: node-api
+    volumes:
+      - ./payment/api:/usr/src/app/payment/api
+      - /usr/src/app/payment/api/node_modules
+    depends_on:
+      - postgres
+  vue-ui:
+    build:
+      context: ./payment/front
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONT_PORT}:${FRONT_PORT}"
+    container_name: vuejs-front
+    volumes:
+      - ./payment/front:/usr/src/app/payment/front
+      - /usr/src/app/payment/front/node_modules
+
+  psp-server:
+    build:
+      context: ./psp
+      dockerfile: Dockerfile
+    ports:
+      - "${PSP_PORT}:${PSP_PORT}" 
+    container_name: psp-server
+    volumes:
+      - ./psp:/usr/src/app/psp
+      - /usr/src/app/psp/node_modules
+
+  merchant-ui:
+    build:
+      context: ./merchant/front
+      dockerfile: Dockerfile
+    ports:
+      - "${MERCHANT_PORT}:${MERCHANT_PORT}" 
+    container_name: vuejs-merchant
+    volumes:
+      - ./merchant/front:/usr/src/app/merchant/front
+      - /usr/src/app/merchant/front/node_modules

@@ -1,0 +1,63 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:11.1-alpine
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./payment/pgdata:/var/lib/postgresql/data
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb-container
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}  # You can change this username
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}  # You can change this password
+    volumes:
+      - ./payment/mongodata:/data/db
+
+  payment-server:
+    image: popokola/payment-api:latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URl=${REDIS_URl}
+      - REDIS_TOKEN=${REDIS_TOKEN}
+      - POSTMARK_API_TOKEN=${POSTMARK_API_TOKEN}
+      - POSTMARK_FROM=${POSTMARK_FROM}
+      - PSP_URL=${PSP_URL}
+      - MONGO_URL=${MONGO_URL}
+    ports:
+      - "${BACK_PORT:-3000}:${BACK_PORT:-3000}" 
+    container_name: node-api
+
+  vue-ui:
+    image: popokola/payment-front:latest
+    environment:
+      - BASE_URL=${BASE_URL}
+    ports:
+      - "${FRONT_PORT:-80}:${FRONT_PORT:-80}"  # Use 80 as default if FRONT_PORT is not set
+    container_name: vuejs-front
+
+  psp-server:
+    image: popokola/psp-server:latest
+    environment:
+      - STRAPOUZ_WEBHOOK_URL=${STRAPOUZ_WEBHOOK_URL}
+    ports:
+      - "${PSP_PORT:-3002}:${PSP_PORT:-3002}" 
+    container_name: node-psp
+
+  merchant-ui:
+    image: popokola/merchant-front:latest 
+    ports:
+      - "${MERCHANT_PORT:-9393}:${MERCHANT_PORT:-9393}"
+    environment:
+      - VUE_APP_BASE_URL=${VUE_APP_BASE_URL}
+    container_name: vuejs-merchant
